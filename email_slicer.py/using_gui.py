@@ -1,8 +1,7 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QLabel
-from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QLabel, QTableWidget, QTableWidgetItem
+from PyQt5.QtGui import QIcon, QFont, QPixmap
 from PyQt5.QtCore import Qt
-
 
 class EmailSlicerApp(QWidget):
     def __init__(self):
@@ -15,16 +14,16 @@ class EmailSlicerApp(QWidget):
         self.setGeometry(600, 300, 800, 500)
         self.setWindowIcon(QIcon('D:/Code/email_slicer.py/slice_icon.png'))
 
-        # Set background color
-        self.setAutoFillBackground(True)
-        palette = self.palette()
-        palette.setColor(self.backgroundRole(), Qt.gray)  
-        self.setPalette(palette)
+        # Set background image
+        background_label = QLabel(self)
+        pixmap = QPixmap('D:/Code/email_slicer.py/Email Slicer.png')
+        background_label.setPixmap(pixmap)
+        background_label.setGeometry(20, -15, 800, 500)
 
         main_layout = QVBoxLayout()
 
         self.result_container = QWidget(self)
-        self.result_container.setLayout(QHBoxLayout())
+        self.result_layout = QVBoxLayout(self.result_container)
         main_layout.addWidget(self.result_container)
 
         # Create a sub-layout for the bottom row
@@ -42,7 +41,7 @@ class EmailSlicerApp(QWidget):
         bottom_row_layout.addWidget(self.email_input)
 
         self.slice_button = QPushButton("Slice Emails", self)
-        self.slice_button.setFixedSize(80, 40)
+        self.slice_button.setFixedSize(120, 40)
         self.slice_button.setStyleSheet(
             "background-color: #4CAF50; color: white;font-weight:bold")
         self.slice_button.clicked.connect(self.slice_emails)
@@ -67,7 +66,6 @@ class EmailSlicerApp(QWidget):
             try:
                 (username, domain) = email.strip().split("@")
 
-                # Store usernames for each domain
                 if domain not in domain_usernames:
                     domain_usernames[domain] = []
 
@@ -81,31 +79,42 @@ class EmailSlicerApp(QWidget):
 
     def display_result(self, domain_usernames):
         # Clear previous results
-        for i in reversed(range(self.result_container.layout().count())):
-            self.result_container.layout().itemAt(i).widget().setParent(None)
+        for i in reversed(range(self.result_layout.count())):
+            self.result_layout.itemAt(i).widget().setParent(None)
 
         for domain, usernames in domain_usernames.items():
-            domain_layout = QVBoxLayout()
+            table_widget = QTableWidget(self)
+            table_widget.setColumnCount(2)
 
-            # Set margins to zero to eliminate default spacing
-            domain_layout.setContentsMargins(0, 0, 0, 0)
+            # Set column widths to 500 pixels
+            table_widget.setColumnWidth(0, 400)
+            table_widget.setColumnWidth(1, 400)
 
-            # Use HTML formatting to bold and underline the domain name
-            domain_label_text = f"<b><u><span style='font-size: 20px;'>{domain}</span></u></b><br>total mail number: {len(usernames)}"
+            table_widget.setHorizontalHeaderLabels(['Domain', 'Username'])
 
-            domain_label = QLabel(domain_label_text)
-            domain_layout.addWidget(domain_label)
+            # Bold the header titles
+            header_font = QFont('Arial', 12, QFont.Bold)
+            table_widget.horizontalHeaderItem(0).setFont(header_font)
+            table_widget.horizontalHeaderItem(1).setFont(header_font)
 
-            usernames_label = QLabel(
-                f"<span style='text-decoration: underline; font-size:20 px;'>Usernames:</span><br>" + "<br>".join(usernames), self)
+            for username in usernames:
+                row_position = table_widget.rowCount()
+                table_widget.insertRow(row_position)
 
-            domain_layout.addWidget(usernames_label)
+                domain_item = QTableWidgetItem(domain)
+                username_item = QTableWidgetItem(username)
 
-            self.result_container.layout().addLayout(domain_layout)
+                table_widget.setItem(row_position, 0, domain_item)
+                table_widget.setItem(row_position, 1, username_item)
+
+            # Set fixed size for each row
+            table_widget.verticalHeader().setDefaultSectionSize(30)
+
+            self.result_layout.addWidget(table_widget)
 
     def show_error_message(self, message):
         error_label = QLabel(message)
-        self.result_container.layout().addWidget(error_label)
+        self.result_layout.addWidget(error_label)
 
 
 def main():
